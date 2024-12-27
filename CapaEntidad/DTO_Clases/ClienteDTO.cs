@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CapaDatos.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,5 +16,6 @@ namespace Application_Layer.DTO_Clases
         public string? Telefono { get; set; }
 
         public string? Correo { get; set; }
+        public ICollection<Venta> ListaVenta { get; set; } = new List<Venta>();
     }
 }
