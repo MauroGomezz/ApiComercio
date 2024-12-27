@@ -16,6 +16,7 @@ namespace Application_Layer.DTO_Clases
         public string? Telefono { get; set; }
 
         public string? Correo { get; set; }
+
         public ICollection<Venta> ListaVenta { get; set; } = new List<Venta>();
     }
 }
