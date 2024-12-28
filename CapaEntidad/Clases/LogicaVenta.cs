@@ -105,7 +105,7 @@ namespace CapaEntidad.Clases
                         Fecha = x.Fecha,
                         Idcliente = x.Idcliente,
                         Total = x.Total,
-                        Ventasitems = x.Ventasitems.Select(item => new Ventasitem
+                        Ventasitems = x.Ventasitems.Select(item => new VentasItemDTO
                         {
                             Id = item.Id,
                             Idventa = item.Idventa,
@@ -138,7 +138,7 @@ namespace CapaEntidad.Clases
                         Fecha = x.Fecha,
                         Idcliente = x.Idcliente,
                         Total = x.Total,
-                        Ventasitems = x.Ventasitems.Select(item => new Ventasitem
+                        Ventasitems = x.Ventasitems.Select(item => new VentasItemDTO
                         {
                             Id = item.Id,
                             Idventa = item.Idventa,
