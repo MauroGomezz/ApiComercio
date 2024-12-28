@@ -13,5 +13,5 @@ public partial class Cliente
 
     public string? Correo { get; set; }
 
-    public virtual ICollection<Venta> Venta { get; } = new List<Venta>();
+    public virtual List<Venta>? Venta { get; }
 }

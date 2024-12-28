@@ -1,4 +1,5 @@
-﻿using ApplicationLayer.DTO_Clases;
+﻿using Application_Layer.DTO_Clases;
+using ApplicationLayer.DTO_Clases;
 using CapaDatos.Models;
 using CapaEntidad.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -17,29 +18,32 @@ namespace CapaEntidad.Clases
 
         public async Task<Producto> Create(ProductoDTO productoDTO)
         {
+            if (productoDTO == null)
+                throw new ArgumentNullException(nameof(productoDTO));
+
             try
             {
-                if (productoDTO != null)
+                var producto = new Producto
                 {
-                    var producto = new Producto()
-                    {
-                        Id = productoDTO.Id,
-                        Categoria = productoDTO.Categoria,
-                        Nombre = productoDTO.Nombre,
-                        Precio = productoDTO.Precio,
-                    };
-                    var obj = db.Productos.Add(producto);
-                    await db.SaveChangesAsync();
-                    return obj.Entity;
-                }
-                else
-                {
-                    return null;
-                }
+                    Id = productoDTO.Id,
+                    Nombre = productoDTO.Nombre,
+                    Precio = productoDTO.Precio,
+                    Categoria = productoDTO.Categoria,
+                };
+
+                db.Productos.Add(producto);
+                await db.SaveChangesAsync();
+                return producto;
             }
-            catch (Exception)
+            catch (DbUpdateException ex)
             {
-                throw;
+                Console.WriteLine($"Error actualizando la base de datos: {ex.Message}");
+                throw new ApplicationException("Error al guardar los datos del producto.", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creando el producto: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al crear el producto.", ex);
             }
         }
 
@@ -52,44 +56,84 @@ namespace CapaEntidad.Clases
                 db.SaveChanges();
             };
         }
-        public void Edit(int id, ProductoDTO producto)
-        {
-            var productoSelec = db.Productos.Where(x => x.Id == id).FirstOrDefault();
-            if (productoSelec != null)
-            {
-                productoSelec.Nombre = producto.Nombre;
-                productoSelec.Precio = producto.Precio;
-                productoSelec.Categoria = producto.Categoria;
-                db.SaveChanges();
-                db.Productos.Update(productoSelec);
-            };
-        }
 
+        public void Edit(int id, ProductoDTO productoDTO)
+        {
+            if (productoDTO == null)
+                throw new ArgumentNullException(nameof(productoDTO));
+
+            var productoSelec = db.Productos.FirstOrDefault(x => x.Id == id);
+            if (productoSelec == null)
+                throw new KeyNotFoundException($"No se encontró un producto con el ID {id}.");
+
+            try
+            {
+                productoSelec.Nombre = productoDTO.Nombre;
+                productoSelec.Precio = productoDTO.Precio;
+                productoSelec.Categoria = productoDTO.Categoria;
+                db.Productos.Update(productoSelec);
+                db.SaveChanges();
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"Error al actualizar la base de datos: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al actualizar el producto.", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al editar el producto: {ex.Message}");
+                throw;
+            }
+        }
 
         public List<ProductoDTO> GetEntidad()
         {
-            var producto = db.Productos.Select(x => new ProductoDTO()
+            try
             {
-                Id = x.Id,
-                Categoria = x.Categoria,
-                Nombre = x.Nombre,
-                Precio = x.Precio
-            });
-            return producto.ToList();
+                var producto = db.Productos.Select(x => new ProductoDTO()
+                {
+                    Id = x.Id,
+                    Categoria = x.Categoria,
+                    Nombre = x.Nombre,
+                    Precio = x.Precio
+                });
+                return producto.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener los productos: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al obtener los productos.", ex);
+            }
         }
+
         public async Task<ProductoDTO?> GetById(int id)
         {
-            var producto = await db.Productos.Where(x => id == x.Id).FirstOrDefaultAsync();
-            if (producto == null)
-                return null;
-            var productoDTO = new ProductoDTO
+            try
             {
-                Id = id,
-                Nombre = producto.Nombre,
-                Precio = producto.Precio,
-                Categoria = producto.Categoria
-            };
-            return productoDTO;
+                var producto = await db.Productos
+                    .Where(x => x.Id == id)
+                    .Select(x => new ProductoDTO
+                    {
+                        Id = x.Id,
+                        Nombre = x.Nombre,
+                        Precio = x.Precio,
+                        Categoria = x.Categoria
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (producto != null)
+                {
+                    return producto;
+                }
+
+                Console.WriteLine($"Producto con Id {id} no encontrado.");
+                throw new Exception("Producto no encontrado.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener el producto: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al obtener el producto.", ex);
+            }
         }
     }
 }

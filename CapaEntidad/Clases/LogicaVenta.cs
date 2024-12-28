@@ -26,19 +26,31 @@ namespace CapaEntidad.Clases
             var ventaItem = CreateItem(ventaDTO.Ventasitems) ?? new List<Ventasitem>();
 
             var total = ventaItem.Sum(item => item.PrecioTotal);
-
-            var venta = new Venta
+            try
             {
-                Id = ventaDTO.Id,
-                Fecha = ventaDTO.Fecha,
-                Total = total,
-                Idcliente = ventaDTO.Idcliente,
-                Ventasitems = ventaItem,
-            };
+                var venta = new Venta
+                {
+                    Id = ventaDTO.Id,
+                    Fecha = ventaDTO.Fecha,
+                    Total = total,
+                    Idcliente = ventaDTO.Idcliente,
+                    Ventasitems = ventaItem,
+                };
 
-            var obj = db.Ventas.Add(venta);
-            await db.SaveChangesAsync();
-            return obj.Entity;
+                db.Ventas.Add(venta);
+                await db.SaveChangesAsync();
+                return venta;
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"Error actualizando la base de datos: {ex.Message}");
+                throw new ApplicationException("Error al guardar los datos de la venta.", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creando la venta: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al crear la venta.", ex);
+            }
         }
 
         public void Delete(int id)
@@ -55,16 +67,29 @@ namespace CapaEntidad.Clases
         {
             if (ventaDTO == null)
                 throw new ArgumentNullException(nameof(ventaDTO));
-            var ventaSelec = db.Ventas.Where(x => x.Id == id).FirstOrDefault();
-            var ventaItem = EditItem(ventaDTO.Ventasitems) ?? new List<Ventasitem>();
-            if (ventaSelec != null)
+
+            var ventaSelec = db.Ventas.FirstOrDefault(x => x.Id == id);
+            if (ventaSelec == null)
+                throw new KeyNotFoundException($"No se encontró una venta con el ID {id}.");
+
+            try
             {
-                var total = ventaSelec.Ventasitems.Sum(item => item.PrecioTotal);
-                ventaSelec.Fecha = ventaDTO.Fecha;
-                ventaSelec.Total = total;
+                var ventaItem = EditItem(ventaDTO.Ventasitems) ?? new List<Ventasitem>();
+                ventaSelec.Fecha = ventaDTO.Fecha ?? throw new ArgumentException("La fecha no puede ser nula.", nameof(ventaDTO.Fecha));
                 ventaSelec.Ventasitems = ventaItem;
-                db.SaveChanges();
+                ventaSelec.Total = ventaSelec.Ventasitems.Sum(item => item.PrecioTotal);
                 db.Ventas.Update(ventaSelec);
+                db.SaveChanges();
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"Error al actualizar la base de datos: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al actualizar la venta.", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al editar la venta: {ex.Message}");
+                throw;
             }
         }
 
@@ -72,32 +97,72 @@ namespace CapaEntidad.Clases
         {
             try
             {
-                var ventas = db.Ventas.Select(x => new VentaDTO()
-                {
-                    Id = x.Id,
-                    Fecha = x.Fecha,
-                    Idcliente = x.Idcliente,
-                    Total = x.Total,
-                    Ventasitems = x.Ventasitems
-                });
-                return ventas.ToList();
+                var ventas = db.Ventas
+                    .Include(v => v.Ventasitems)
+                    .Select(x => new VentaDTO
+                    {
+                        Id = x.Id,
+                        Fecha = x.Fecha,
+                        Idcliente = x.Idcliente,
+                        Total = x.Total,
+                        Ventasitems = x.Ventasitems.Select(item => new Ventasitem
+                        {
+                            Id = item.Id,
+                            Idventa = item.Idventa,
+                            Idproducto = item.Idproducto,
+                            Cantidad = item.Cantidad,
+                            PrecioUnitario = item.PrecioUnitario,
+                            PrecioTotal = item.PrecioTotal
+                        }).ToList()
+                    })
+                    .ToList();
+
+                return ventas;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Console.WriteLine($"Error al obtener las ventas: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al obtener las ventas.", ex);
             }
         }
         public async Task<VentaDTO?> GetById(int id)
         {
-            var ventas = await db.Ventas.Select(x => new VentaDTO()
+            try
             {
-                Id = x.Id,
-                Fecha = x.Fecha,
-                Idcliente = x.Idcliente,
-                Total = x.Total,
-                Ventasitems = x.Ventasitems
-            }).Where(x => id == x.Id).FirstOrDefaultAsync();
-            return ventas;
+                var ventas = await db.Ventas
+                    .Where(x => id == x.Id)
+                    .Include(v => v.Ventasitems)
+                    .Select(x => new VentaDTO
+                    {
+                        Id = x.Id,
+                        Fecha = x.Fecha,
+                        Idcliente = x.Idcliente,
+                        Total = x.Total,
+                        Ventasitems = x.Ventasitems.Select(item => new Ventasitem
+                        {
+                            Id = item.Id,
+                            Idventa = item.Idventa,
+                            Idproducto = item.Idproducto,
+                            Cantidad = item.Cantidad,
+                            PrecioUnitario = item.PrecioUnitario,
+                            PrecioTotal = item.PrecioTotal
+                        }).ToList()
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (ventas != null)
+                {
+                    return ventas;
+                }
+
+                Console.WriteLine($"Venta con Id {id} no encontrado.");
+                throw new Exception("Venta no encontrado.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener la venta: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al obtener la venta.", ex);
+            }
         }
     }
 }

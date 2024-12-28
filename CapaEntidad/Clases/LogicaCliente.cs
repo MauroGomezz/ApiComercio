@@ -1,4 +1,5 @@
 ﻿using Application_Layer.DTO_Clases;
+using ApplicationLayer.DTO_Clases;
 using CapaDatos.Models;
 using CapaEntidad.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -17,29 +18,34 @@ namespace CapaEntidad.Clases
 
         public async Task<Cliente> Create(ClienteDTO clienteDTO)
         {
+            if (clienteDTO == null || string.IsNullOrWhiteSpace(clienteDTO.Name) || string.IsNullOrWhiteSpace(clienteDTO.Correo))
+            {
+                throw new ArgumentException("El clienteDTO es inválido o tiene campos requeridos vacíos.");
+            }
+
             try
             {
-                if (clienteDTO != null)
+                var cliente = new Cliente
                 {
-                    var cliente = new Cliente()
-                    {
-                        Id = clienteDTO.Id,
-                        Name = clienteDTO.Name,
-                        Correo = clienteDTO.Correo,
-                        Telefono = clienteDTO.Telefono,
-                    };
-                    var obj = db.Clientes.Add(cliente);
-                    await db.SaveChangesAsync();
-                    return obj.Entity;
-                }
-                else
-                {
-                    return null;
-                }
+                    Id = clienteDTO.Id,
+                    Name = clienteDTO.Name,
+                    Correo = clienteDTO.Correo,
+                    Telefono = clienteDTO.Telefono,
+                };
+
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
+                return cliente;
             }
-            catch (Exception)
+            catch (DbUpdateException ex)
             {
-                throw;
+                Console.WriteLine($"Error actualizando la base de datos: {ex.Message}");
+                throw new ApplicationException("Error al guardar los datos del cliente.", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creando el cliente: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al crear el cliente.", ex);
             }
         }
 
@@ -52,6 +58,7 @@ namespace CapaEntidad.Clases
                 db.SaveChanges();
             };
         }
+
         public void Edit(int id, ClienteDTO cliente)
         {
             var clienteSelec = db.Clientes.Where(x => x.Id == id).FirstOrDefault();
@@ -65,21 +72,6 @@ namespace CapaEntidad.Clases
             };
         }
 
-        public async Task<ClienteDTO?> GetById(int id)
-        {
-            var cliente = await db.Clientes.Where(x =>  id == x.Id).FirstOrDefaultAsync();
-            if (cliente == null)
-                return null;
-            var clienteDTO = new ClienteDTO
-            {
-                Id = cliente.Id,
-                Name = cliente.Name,
-                Correo = cliente.Correo,
-                Telefono = cliente.Telefono,
-            };
-            return clienteDTO;
-        }
-
         public List<ClienteDTO> GetEntidad()
         {
             var clientes = db.Clientes.Select(x => new ClienteDTO()
@@ -90,6 +82,37 @@ namespace CapaEntidad.Clases
                 Correo = x.Correo,
             });
             return clientes.ToList();
+        }
+
+        public async Task<ClienteDTO?> GetById(int id)
+        {
+            try
+            {
+                var cliente = await db.Clientes
+                    .Where(x => x.Id == id)
+                    .Select(x => new ClienteDTO
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Correo = x.Correo,
+                        Telefono = x.Telefono,
+                        ListaVenta = x.Venta
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (cliente != null)
+                {
+                    return cliente;
+                }
+
+                Console.WriteLine($"Producto con Id {id} no encontrado.");
+                throw new Exception("Producto no encontrado.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener el producto: {ex.Message}");
+                throw new ApplicationException("Ocurrió un error al obtener el producto.", ex);
+            }
         }
     }
 }
