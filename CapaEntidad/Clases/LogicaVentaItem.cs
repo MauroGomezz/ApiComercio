@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace ApplicationLayer.Clases
 {
-    public class LogicaVentaItem : IVentaItem<VentasItemDTO>
+    public class LogicaVentaItem : IVentaItem<Ventasitem>
     {
         public PruebademoContext db;
         public LogicaVentaItem(PruebademoContext db) { this.db = db; }
 
-        public List<Ventasitem> CreateItem(List<VentasItemDTO>? ventaiItemDTO)
+        public List<Ventasitem> CreateItem(List<Ventasitem>? ventaiItemDTO)
         {
             if (ventaiItemDTO == null || !ventaiItemDTO.Any())
                 return new List<Ventasitem>();
@@ -57,7 +57,7 @@ namespace ApplicationLayer.Clases
             }
         }
 
-        public List<Ventasitem> EditItem(List<VentasItemDTO>? ventaiItemDTO)
+        public List<Ventasitem> EditItem(List<Ventasitem>? ventaiItemDTO)
         {
             if (ventaiItemDTO == null || !ventaiItemDTO.Any())
                 return new List<Ventasitem>();
