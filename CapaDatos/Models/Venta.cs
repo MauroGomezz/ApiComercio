@@ -15,5 +15,5 @@ public partial class Venta
 
     internal virtual Cliente? IdclienteNavigation { get; set; }
 
-    public List<Ventasitem>? Ventasitems { get; set; }
+    public required List<Ventasitem> Ventasitems { get; set; }
 }

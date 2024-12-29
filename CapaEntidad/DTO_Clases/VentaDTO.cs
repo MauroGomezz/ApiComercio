@@ -17,6 +17,6 @@ namespace ApplicationLayer.DTO_Clases
 
         public double? Total { get; set; }
 
-        public List<VentasItemDTO>? Ventasitems { get; set; }
+        public required List<VentasItemDTO> Ventasitems { get; set; }
     }
 }

@@ -77,7 +77,9 @@ namespace CapaEntidad.Clases
                 var ventaItem = EditItem(ventaDTO.Ventasitems) ?? new List<Ventasitem>();
                 ventaSelec.Fecha = ventaDTO.Fecha ?? throw new ArgumentException("La fecha no puede ser nula.", nameof(ventaDTO.Fecha));
                 ventaSelec.Ventasitems = ventaItem;
-                ventaSelec.Total = ventaSelec.Ventasitems.Sum(item => item.PrecioTotal);
+                db.Ventas.Update(ventaSelec);
+                db.SaveChanges();
+                ventaSelec.Total = precioTotal(id);
                 db.Ventas.Update(ventaSelec);
                 db.SaveChanges();
             }
@@ -163,6 +165,13 @@ namespace CapaEntidad.Clases
                 Console.WriteLine($"Error al obtener la venta: {ex.Message}");
                 throw new ApplicationException("Ocurrió un error al obtener la venta.", ex);
             }
+        }
+
+        public double? precioTotal(int id)
+        {
+            var venta = db.Ventas.Where(x => id == x.Id).FirstOrDefault();
+            double? total = venta.Ventasitems.Sum(x => x.PrecioTotal);
+            return total;
         }
     }
 }

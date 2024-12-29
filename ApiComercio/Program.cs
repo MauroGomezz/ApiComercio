@@ -5,6 +5,7 @@ using Application_Layer.DTO_Clases;
 using ApplicationLayer.DTO_Clases;
 using CapaEntidad.Interfaces;
 using ApplicationLayer.Interfaces;
+using ApplicationLayer.Clases;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,7 @@ builder.Services.AddDbContext<PruebademoContext>(x => x.UseSqlServer(conn));
 builder.Services.AddScoped<IGeneric<ClienteDTO, Cliente>, LogicaCliente>();
 builder.Services.AddScoped<IGeneric<ProductoDTO, Producto>, LogicaProducto>();
 builder.Services.AddScoped<IGeneric<VentaDTO, Venta>, LogicaVenta>();
+builder.Services.AddScoped<IVentaItem<VentasItemDTO>, LogicaVentaItem>();
 
 var app = builder.Build();
 
